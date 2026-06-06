@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Temp Logs"/>
+<meta name="theme-color" content="#3B6D11"/>
+<title>El Molino – Temperature Logs</title>
+<link rel="manifest" href="manifest.json"/>
+<style>
+:root{--green:#3B6D11;--green-lt:#EAF3DE;--green-md:#C0DD97;--green-dk:#27500A;--amber:#FAEEDA;--amber-dk:#633806;--red-lt:#FCEBEB;--red-dk:#A32D2D;--bg:#f4f4f2;--card:#ffffff;--text:#1a1a1a;--muted:#5a5a5a;--border:#e0e0da;--nav-h:64px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:16px;overflow:hidden;height:100dvh;display:flex;flex-direction:column}
+.topbar{background:var(--green);color:#fff;padding:14px 16px 12px;padding-top:calc(14px + env(safe-area-inset-top,0px));flex-shrink:0}
+.topbar-row{display:flex;align-items:center;justify-content:space-between}
+.topbar h1{font-size:17px;font-weight:600;letter-spacing:.2px}
+.topbar-sub{font-size:12px;opacity:.8;margin-top:2px}
+.sync-btn{background:rgba(255,255,255,.18);border:none;color:#fff;font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:5px}
+.sync-btn:active{background:rgba(255,255,255,.3)}
+.setup-bar{background:#fff3cd;border-bottom:1px solid #ffc107;padding:10px 16px;font-size:13px;color:#856404;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.setup-bar input{flex:1;font-size:12px;padding:5px 8px;border:1px solid #ffc107;border-radius:6px}
+.setup-bar button{background:#856404;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap}
+.stats-row{display:flex;gap:8px;padding:10px 12px;background:var(--card);border-bottom:0.5px solid var(--border);flex-shrink:0;overflow-x:auto}
+.stat{flex:1;min-width:70px;text-align:center;background:var(--bg);border-radius:8px;padding:7px 4px}
+.stat-val{font-size:20px;font-weight:600}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+.stat.s-pass .stat-val{color:var(--green-dk)}
+.stat.s-warn .stat-val{color:var(--amber-dk)}
+.stat.s-fail .stat-val{color:var(--red-dk)}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 80px}
+.card{background:var(--card);border-radius:12px;border:0.5px solid var(--border);padding:14px;margin-bottom:12px}
+.card-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.range-info{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6}
+.range-info b{color:var(--text)}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:500}
+.field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:#fff;color:var(--text);-webkit-appearance:none}
+.field input:focus,.field select:focus{outline:none;border-color:var(--green)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.submit-btn{width:100%;padding:13px;font-size:15px;font-weight:600;background:var(--green);color:#fff;border:none;border-radius:10px;cursor:pointer;margin-top:4px}
+.submit-btn:active{background:var(--green-dk)}
+.alert{padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:10px;font-weight:500}
+.alert-ok{background:var(--green-lt);color:var(--green-dk)}
+.alert-warn{background:var(--amber);color:var(--amber-dk)}
+.alert-fail{background:var(--red-lt);color:var(--red-dk)}
+.log-section{margin-top:4px}
+.log-section h3{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.log-item{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.log-main{flex:1;min-width:0}
+.log-main .log-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-main .log-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.log-right{text-align:right;flex-shrink:0}
+.log-temp{font-size:16px;font-weight:600}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;margin-top:3px}
+.badge-ok{background:var(--green-lt);color:var(--green-dk)}
+.badge-warn{background:var(--amber);color:var(--amber-dk)}
+.badge-fail{background:var(--red-lt);color:var(--red-dk)}
+.del-btn{background:none;border:none;color:#ccc;font-size:18px;padding:2px 4px;cursor:pointer;line-height:1}
+.del-btn:active{color:var(--red-dk)}
+.empty-msg{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:0.5px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--muted);padding-bottom:2px}
+.nav-btn.active{color:var(--green)}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn span{font-size:10px;font-weight:500}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div>
+      <h1>El Molino</h1>
+      <div class="topbar-sub">Temperature &amp; Calibration Logs</div>
+    </div>
+    <button class="sync-btn" onclick="syncAll()" id="sync-btn">
+      <span id="sync-icon">&#8635;</span> Sync
+    </button>
+  </div>
+</div>
+
+<div class="setup-bar" id="setup-bar">
+  <span>⚙️</span>
+  <input type="text" id="script-url-input" placeholder="Paste your Google Apps Script URL here..."/>
+  <button onclick="saveScriptUrl()">Save</button>
+</div>
+
+<div class="stats-row">
+  <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+  <div class="stat s-pass"><div class="stat-val" id="s-pass">0</div><div class="stat-lbl">Pass</div></div>
+  <div class="stat s-warn"><div class="stat-val" id="s-warn">0</div><div class="stat-lbl">Warning</div></div>
+  <div class="stat s-fail"><div class="stat-val" id="s-fail">0</div><div class="stat-lbl">Out of range</div></div>
+</div>
+
+<div class="scroll-area" id="scroll-area">
+  <!-- content injected by JS -->
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="switchTab('cook')" id="nav-cook">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h8M12 8v8"/></svg>
+    <span>Cooking</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('hot')" id="nav-hot">
+    <svg viewBox="0 0 24 24"><path d="M12 2v20M8 6l4-4 4 4M8 18l4 4 4-4"/></svg>
+    <span>Hot hold</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('cold')" id="nav-cold">
+    <svg viewBox="0 0 24 24"><path d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07l14.14-14.14"/></svg>
+    <span>Cold hold</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('unit')" id="nav-unit">
+    <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 10h14M10 6h4M10 14h4"/></svg>
+    <span>Fridge</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('cal')" id="nav-cal">
+    <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    <span>Calibrate</span>
+  </button>
+</nav>
+
+<script>
+const STORAGE_KEY = 'elmolino_templogs_v2';
+const SCRIPT_KEY  = 'elmolino_script_url';
+
+let currentTab = 'cook';
+let logs = {cook:[],hot:[],cold:[],unit:[],cal:[]};
+let scriptUrl = localStorage.getItem(SCRIPT_KEY) || '';
+
+function saveScriptUrl() {
+  const val = document.getElementById('script-url-input').value.trim();
+  if (!val.startsWith('http')) { showGlobalAlert('Please paste a valid URL.','fail'); return; }
+  scriptUrl = val;
+  localStorage.setItem(SCRIPT_KEY, scriptUrl);
+  document.getElementById('setup-bar').style.display = 'none';
+  showGlobalAlert('Script URL saved! Ready to sync.','ok');
+}
+
+function init() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) logs = JSON.parse(saved);
+  if (scriptUrl) document.getElementById('setup-bar').style.display = 'none';
+  updateStats();
+  renderTab('cook');
+}
+
+function saveLogs() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+}
+
+function today() { return new Date().toISOString().slice(0,10); }
+function nowTime() { return new Date().toTimeString().slice(0,5); }
+
+function getStatus(type, val, utype) {
+  const v = parseFloat(val);
+  if (type==='cook') return v>=165?'pass':'fail';
+  if (type==='hot')  return v>=140?'pass':v>=135?'warn':'fail';
+  if (type==='cold') return v<=41?'pass':v<=45?'warn':'fail';
+  if (type==='unit') {
+    if (utype==='freezer') return v<=0?'pass':v<=10?'warn':'fail';
+    return v<=41?'pass':v<=45?'warn':'fail';
+  }
+  if (type==='cal') {
+    const target = val>100?212:32;
+    return Math.abs(v-target)<=2?'pass':Math.abs(v-target)<=4?'warn':'fail';
+  }
+  return 'pass';
+}
+
+function badgeHTML(s) {
+  const map={pass:'badge-ok',warn:'badge-warn',fail:'badge-fail'};
+  const lbl={pass:'Pass',warn:'Warning',fail:'Out of range'};
+  return `<span class="badge ${map[s]}">${lbl[s]}</span>`;
+}
+
+function updateStats() {
+  const all=[...logs.cook,...logs.hot,...logs.cold,...logs.unit,...logs.cal];
+  document.getElementById('s-total').textContent=all.length;
+  document.getElementById('s-pass').textContent=all.filter(e=>e.status==='pass').length;
+  document.getElementById('s-warn').textContent=all.filter(e=>e.status==='warn').length;
+  document.getElementById('s-fail').textContent=all.filter(e=>e.status==='fail').length;
+}
+
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('nav-'+name).classList.add('active');
+  renderTab(name);
+  document.getElementById('scroll-area').scrollTop=0;
+}
+
+function renderTab(type) {
+  const area = document.getElementById('scroll-area');
+  area.innerHTML = formHTML(type) + logListHTML(type);
+}
+
+function formHTML(type) {
+  const d=today(), t=nowTime();
+  if (type==='cook') return `
+    <div class="card">
+      <div class="card-title">🔥 Log cooking temperature</div>
+      <div class="range-info"><b>Required:</b> Tamales &amp; poultry must reach <b>165°F</b> or above.</div>
+      <div id="form-alert"></div>
+      <div class="grid2">
+        <div class="field"><label>Date</label><input type="date" id="f-date" value="${d}"/></div>
+        <div class="field"><label>Time</label><input type="time" id="f-time" value="${t}"/></div>
+      </div>
+      <div class="field"><label>Food item</label><input type="text" id="f-food" placeholder="e.g. Tamales pork"/></div>
+      <div class="grid2">
+        <div class="field"><label>Temp (°F)</label><input type="number" id="f-temp" placeholder="165" step="0.1" inputmode="decimal"/></div>
+        <div class="field"><label>Recorded by</label><input type="text" id="f-by" placeholder="Name"/></div>
+      </div>
+      <div class="field"><label>Notes (optional)</label><input type="text" id="f-notes" placeholder=""/></div>
+      <button class="submit-btn" onclick="submitEntry('cook')">Save entry</button>
+    </div>`;
+
+  if (type==='hot') return `
+    <div class="card">
+      <div class="card-title">🌡️ Log hot holding temperature</div>
+      <div class="range-info"><b>Pass:</b> 140°F+ &nbsp;|&nbsp; <b>Warning:</b> 135–139°F &nbsp;|&nbsp; <b>Fail:</b> below 135°F</div>
+      <div id="form-alert"></div>
+      <div class="grid2">
+        <div class="field"><label>Date</label><input type="date" id="f-date" value="${d}"/></div>
+        <div class="field"><label>Time</label><input type="time" id="f-time" value="${t}"/></div>
+      </div>
+      <div class="field"><label>Food item</label><input type="text" id="f-food" placeholder="e.g. Tamales beef"/></div>
+      <div class="grid2">
+        <div class="field"><label>Temp (°F)</label><input type="number" id="f-temp" placeholder="140" step="0.1" inputmode="decimal"/></div>
+        <div class="field"><label>Equipment</label><input type="text" id="f-equip" placeholder="e.g. Steam table"/></div>
+      </div>
+      <div class="field"><label>Recorded by</label><input type="text" id="f-by" placeholder="Name"/></div>
+      <button class="submit-btn" onclick="submitEntry('hot')">Save entry</button>
+    </div>`;
+
+  if (type==='cold') return `
+    <div class="card">
+      <div class="card-title">❄️ Log cold holding temperature</div>
+      <div class="range-info"><b>Pass:</b> 41°F or below &nbsp;|&nbsp; <b>Warning:</b> 42–45°F &nbsp;|&nbsp; <b>Fail:</b> above 45°F</div>
+      <div id="form-alert"></div>
+      <div class="grid2">
+        <div class="field"><label>Date</label><input type="date" id="f-date" value="${d}"/></div>
+        <div class="field"><label>Time</label><input type="time" id="f-time" value="${t}"/></div>
+      </div>
+      <div class="field"><label>Food item</label><input type="text" id="f-food" placeholder="e.g. Raw masa"/></div>
+      <div class="grid2">
+        <div class="field"><label>Temp (°F)</label><input type="number" id="f-temp" placeholder="38" step="0.1" inputmode="decimal"/></div>
+        <div class="field"><label>Equipment</label><input type="text" id="f-equip" placeholder="e.g. Reach-in cooler"/></div>
+      </div>
+      <div class="field"><label>Recorded by</label><input type="text" id="f-by" placeholder="Name"/></div>
+      <button class="submit-btn" onclick="submitEntry('cold')">Save entry</button>
+    </div>`;
+
+  if (type==='unit') return `
+    <div class="card">
+      <div class="card-title">🧊 Log fridge / freezer check</div>
+      <div class="range-info"><b>Fridge:</b> 33–41°F &nbsp;|&nbsp; <b>Freezer:</b> 0°F or below</div>
+      <div id="form-alert"></div>
+      <div class="grid2">
+        <div class="field"><label>Date</label><input type="date" id="f-date" value="${d}"/></div>
+        <div class="field"><label>Time</label><input type="time" id="f-time" value="${t}"/></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Unit name</label><input type="text" id="f-name" placeholder="e.g. Walk-in fridge"/></div>
+        <div class="field"><label>Unit type</label><select id="f-utype"><option value="fridge">Refrigerator</option><option value="freezer">Freezer</option></select></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Temp (°F)</label><input type="number" id="f-temp" placeholder="38" step="0.1" inputmode="decimal"/></div>
+        <div class="field"><label>Recorded by</label><input type="text" id="f-by" placeholder="Name"/></div>
+      </div>
+      <button class="submit-btn" onclick="submitEntry('unit')">Save entry</button>
+    </div>`;
+
+  if (type==='cal') return `
+    <div class="card">
+      <div class="card-title">🔧 Log thermometer calibration</div>
+      <div class="range-info"><b>Ice water method:</b> reading should be 32°F ±2°F<br><b>Boiling water:</b> 212°F ±2°F at sea level</div>
+      <div id="form-alert"></div>
+      <div class="grid2">
+        <div class="field"><label>Date</label><input type="date" id="f-date" value="${d}"/></div>
+        <div class="field"><label>Time</label><input type="time" id="f-time" value="${t}"/></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Thermometer ID</label><input type="text" id="f-tid" placeholder="e.g. Therm #1"/></div>
+        <div class="field"><label>Method</label><select id="f-method"><option value="Ice water (32°F)">Ice water (32°F)</option><option value="Boiling water (212°F)">Boiling water (212°F)</option></select></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Reading (°F)</label><input type="number" id="f-reading" placeholder="32" step="0.1" inputmode="decimal"/></div>
+        <div class="field"><label>Adjustment</label><select id="f-adj"><option value="No">No adjustment</option><option value="Yes">Yes — adjusted</option><option value="Replaced">Replaced</option></select></div>
+      </div>
+      <div class="field"><label>Calibrated by</label><input type="text" id="f-by" placeholder="Name"/></div>
+      <button class="submit-btn" onclick="submitEntry('cal')">Save entry</button>
+    </div>`;
+  return '';
+}
+
+function logListHTML(type) {
+  const entries = logs[type];
+  if (!entries.length) return `<div class="log-section"><div class="empty-msg">No entries yet for this log.</div></div>`;
+  return `<div class="log-section"><h3>Recent entries</h3>` +
+    entries.map(e => {
+      let name='', meta='', tempStr='';
+      if (type==='cook'||type==='hot'||type==='cold') { name=e.food; meta=`${e.date} ${e.time}${e.by?' · '+e.by:''}`; tempStr=e.temp+'°F'; }
+      if (type==='unit') { name=e.name+' ('+(e.utype==='freezer'?'Freezer':'Fridge')+')'; meta=`${e.date} ${e.time}${e.by?' · '+e.by:''}`; tempStr=e.temp+'°F'; }
+      if (type==='cal') { name=e.tid+' — '+e.method; meta=`${e.date} ${e.time}${e.by?' · '+e.by:''} · ${e.adj}`; tempStr=e.reading+'°F'; }
+      return `<div class="log-item">
+        <div class="log-main">
+          <div class="log-name">${name}</div>
+          <div class="log-meta">${meta}</div>
+        </div>
+        <div class="log-right">
+          <div class="log-temp">${tempStr}</div>
+          ${badgeHTML(e.status)}
+          <br><button class="del-btn" onclick="deleteEntry('${type}',${e.id})">×</button>
+        </div>
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function showFormAlert(msg, cls) {
+  const el = document.getElementById('form-alert');
+  if (!el) return;
+  el.className = 'alert alert-'+cls;
+  el.textContent = msg;
+  setTimeout(() => { if(el){el.className='';el.textContent='';} }, 5000);
+}
+
+function showGlobalAlert(msg, cls) {
+  const a = document.createElement('div');
+  a.className='alert alert-'+cls;
+  a.style.cssText='position:fixed;top:80px;left:12px;right:12px;z-index:999;font-size:14px;';
+  a.textContent=msg;
+  document.body.appendChild(a);
+  setTimeout(()=>a.remove(),4000);
+}
+
+function submitEntry(type) {
+  const d=document.getElementById('f-date')?.value;
+  const t=document.getElementById('f-time')?.value;
+  if (!d||!t) { showFormAlert('Please fill in date and time.','warn'); return; }
+
+  let entry={id:Date.now(),date:d,time:t};
+
+  if (type==='cook') {
+    const food=document.getElementById('f-food')?.value.trim();
+    const temp=document.getElementById('f-temp')?.value;
+    if (!food||!temp) { showFormAlert('Please fill in food item and temperature.','warn'); return; }
+    entry={...entry,food,temp:parseFloat(temp),by:document.getElementById('f-by')?.value||'',notes:document.getElementById('f-notes')?.value||'',status:getStatus('cook',temp)};
+  } else if (type==='hot') {
+    const food=document.getElementById('f-food')?.value.trim();
+    const temp=document.getElementById('f-temp')?.value;
+    if (!food||!temp) { showFormAlert('Please fill in food item and temperature.','warn'); return; }
+    entry={...entry,food,temp:parseFloat(temp),equip:document.getElementById('f-equip')?.value||'',by:document.getElementById('f-by')?.value||'',status:getStatus('hot',temp)};
+  } else if (type==='cold') {
+    const food=document.getElementById('f-food')?.value.trim();
+    const temp=document.getElementById('f-temp')?.value;
+    if (!food||!temp) { showFormAlert('Please fill in food item and temperature.','warn'); return; }
+    entry={...entry,food,temp:parseFloat(temp),equip:document.getElementById('f-equip')?.value||'',by:document.getElementById('f-by')?.value||'',status:getStatus('cold',temp)};
+  } else if (type==='unit') {
+    const name=document.getElementById('f-name')?.value.trim();
+    const temp=document.getElementById('f-temp')?.value;
+    const utype=document.getElementById('f-utype')?.value||'fridge';
+    if (!name||!temp) { showFormAlert('Please fill in unit name and temperature.','warn'); return; }
+    entry={...entry,name,utype,temp:parseFloat(temp),by:document.getElementById('f-by')?.value||'',status:getStatus('unit',temp,utype)};
+  } else if (type==='cal') {
+    const tid=document.getElementById('f-tid')?.value.trim();
+    const reading=document.getElementById('f-reading')?.value;
+    if (!tid||!reading) { showFormAlert('Please fill in thermometer ID and reading.','warn'); return; }
+    entry={...entry,tid,method:document.getElementById('f-method')?.value,reading:parseFloat(reading),adj:document.getElementById('f-adj')?.value,by:document.getElementById('f-by')?.value||'',status:getStatus('cal',reading)};
+  }
+
+  logs[type].unshift(entry);
+  saveLogs();
+  updateStats();
+  sendToSheets(type, entry);
+  const msgs={pass:'✅ Saved — temperature is in range.',warn:'⚠️ Saved — temperature in warning range. Monitor closely.',fail:'🚨 OUT OF RANGE — logged. Take corrective action!'};
+  showFormAlert(msgs[entry.status], entry.status==='pass'?'ok':entry.status==='warn'?'warn':'fail');
+  renderTab(type);
+}
+
+function deleteEntry(type, id) {
+  logs[type]=logs[type].filter(e=>e.id!==id);
+  saveLogs();
+  updateStats();
+  renderTab(type);
+}
+
+async function sendToSheets(type, entry) {
+  if (!scriptUrl) return;
+  try {
+    await fetch(scriptUrl, {
+      method:'POST',
+      body: JSON.stringify({type, entry}),
+      headers:{'Content-Type':'application/json'}
+    });
+  } catch(e) { console.warn('Sync failed:', e); }
+}
+
+async function syncAll() {
+  if (!scriptUrl) { showGlobalAlert('Please set up your Google Script URL first.','warn'); return; }
+  const btn=document.getElementById('sync-btn');
+  btn.innerHTML='<span class="spinner"></span> Syncing…';
+  btn.disabled=true;
+  let count=0;
+  for (const type of ['cook','hot','cold','unit','cal']) {
+    for (const entry of logs[type]) {
+      await sendToSheets(type, entry);
+      count++;
+    }
+  }
+  btn.innerHTML='&#8635; Sync';
+  btn.disabled=false;
+  showGlobalAlert(`✅ Synced ${count} entries to Google Sheets.`,'ok');
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+init();
+</script>
+</body>
+</html>
