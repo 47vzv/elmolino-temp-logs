@@ -411,14 +411,11 @@ function deleteEntry(type, id) {
 async function sendToSheets(type, entry) {
   if (!scriptUrl) return;
   try {
-    // Google Apps Script requires no-cors mode from external origins
-    var params = new URLSearchParams();
-    params.append('payload', JSON.stringify({type: type, entry: entry}));
-    await fetch(scriptUrl + '?payload=' + encodeURIComponent(JSON.stringify({type: type, entry: entry})), {
-      method:'POST',
-      mode: 'no-cors',
-      headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({type: type, entry: entry})
+    var payload = encodeURIComponent(JSON.stringify({type: type, entry: entry}));
+    var url = scriptUrl + '?payload=' + payload;
+    await fetch(url, {
+      method: 'GET',
+      mode: 'no-cors'
     });
   } catch(e) { console.warn('Sync failed:', e); }
 }
