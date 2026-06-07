@@ -263,10 +263,19 @@ function formHTML(type) {
         <div class="field"><label>Date</label><input type="date" id="f-date" value="${d}"/></div>
         <div class="field"><label>Time</label><input type="time" id="f-time" value="${t}"/></div>
       </div>
-      <div class="grid2">
-        <div class="field"><label>Unit name</label><input type="text" id="f-name" placeholder="e.g. Walk-in fridge"/></div>
-        <div class="field"><label>Unit type</label><select id="f-utype"><option value="fridge">Refrigerator</option><option value="freezer">Freezer</option></select></div>
+      <div class="field"><label>Select unit</label>
+        <select id="f-unit-select" onchange="onUnitSelect()">
+          <option value="">— Choose a unit —</option>
+          <option value="Popsicles fridge|fridge">🧃 Popsicles fridge (front)</option>
+          <option value="Drinks fridge|fridge">🥤 Drinks fridge (front)</option>
+          <option value="Masa fridge|fridge">🫔 Masa fridge (front)</option>
+          <option value="Cheese and produce fridge|fridge">🧀 Cheese &amp; produce fridge (front)</option>
+          <option value="Kitchen fridge|fridge">🍽️ Kitchen fridge (back)</option>
+          <option value="Tamale freezer|freezer">🧊 Tamale freezer (back)</option>
+        </select>
       </div>
+      <input type="hidden" id="f-utype" value="fridge"/>
+      <input type="hidden" id="f-name" value=""/>
       <div class="grid2">
         <div class="field"><label>Temp (°F)</label><input type="number" id="f-temp" placeholder="38" step="0.1" inputmode="decimal"/></div>
         <div class="field"><label>Recorded by</label><input type="text" id="f-by" placeholder="Name"/></div>
@@ -337,6 +346,15 @@ function showGlobalAlert(msg, cls) {
   setTimeout(()=>a.remove(),4000);
 }
 
+function onUnitSelect() {
+  var sel = document.getElementById('f-unit-select');
+  var val = sel.value;
+  if (!val) return;
+  var parts = val.split('|');
+  document.getElementById('f-name').value = parts[0];
+  document.getElementById('f-utype').value = parts[1];
+}
+
 function submitEntry(type) {
   const d=document.getElementById('f-date')?.value;
   const t=document.getElementById('f-time')?.value;
@@ -360,10 +378,12 @@ function submitEntry(type) {
     if (!food||!temp) { showFormAlert('Please fill in food item and temperature.','warn'); return; }
     entry={...entry,food,temp:parseFloat(temp),equip:document.getElementById('f-equip')?.value||'',by:document.getElementById('f-by')?.value||'',status:getStatus('cold',temp)};
   } else if (type==='unit') {
-    const name=document.getElementById('f-name')?.value.trim();
+    const sel=document.getElementById('f-unit-select');
+    const name=document.getElementById('f-name')?.value||'';
     const temp=document.getElementById('f-temp')?.value;
     const utype=document.getElementById('f-utype')?.value||'fridge';
-    if (!name||!temp) { showFormAlert('Please fill in unit name and temperature.','warn'); return; }
+    if (!sel||!sel.value) { showFormAlert('Please select a unit.','warn'); return; }
+    if (!temp) { showFormAlert('Please enter the temperature.','warn'); return; }
     entry={...entry,name,utype,temp:parseFloat(temp),by:document.getElementById('f-by')?.value||'',status:getStatus('unit',temp,utype)};
   } else if (type==='cal') {
     const tid=document.getElementById('f-tid')?.value.trim();
